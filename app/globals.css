@@ -19,6 +19,13 @@
   --score-gold: #c8922a;
   --success: #3d8050;
   --error: #c03030;
+  /* Spécificités du thème sombre de l'app iOS (ThemeContext / tokens) */
+  --tab-active: var(--primary);
+  --tab-inactive: var(--text-muted);
+  --wine-font: inherit;
+  --wine-weight: 600;
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-fab: 0 4px 14px rgb(122 32 48 / 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -36,6 +43,12 @@
     --score-gold: #d4a24a;
     --success: #5fa877;
     --error: #e0556a;
+    --tab-active: var(--score-gold);
+    --tab-inactive: var(--text-light);
+    --wine-font: var(--font-cormorant), Georgia, serif;
+    --wine-weight: 400;
+    --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.45);
+    --shadow-fab: 0 8px 22px rgb(122 32 48 / 0.55);
   }
 }
 
@@ -53,6 +66,12 @@
   --score-gold: #d4a24a;
   --success: #5fa877;
   --error: #e0556a;
+  --tab-active: var(--score-gold);
+  --tab-inactive: var(--text-light);
+  --wine-font: var(--font-cormorant), Georgia, serif;
+  --wine-weight: 400;
+  --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.45);
+  --shadow-fab: 0 8px 22px rgb(122 32 48 / 0.55);
 }
 
 @theme inline {
@@ -77,4 +96,18 @@
 body {
   background: var(--bg);
   color: var(--text);
+}
+
+/* Nom d'un vin : police système en clair, Cormorant en sombre (comme iOS). */
+.wine-name {
+  font-family: var(--wine-font);
+  font-weight: var(--wine-weight);
+}
+
+/* Barre d'onglets et en-têtes : zones sûres de l'iPhone en mode « app ». */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }
