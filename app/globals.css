@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/*
+ * Palette reprise à l'identique de l'app iOS (src/components/ui/tokens.ts).
+ * Mode sombre automatique selon le système ; le choix manuel Auto/Clair/Sombre
+ * des Paramètres posera data-theme sur <html> (story Paramètres).
+ */
+:root {
+  --bg: #f4ede2;
+  --surface: #fffbf5;
+  --surface-alt: #eae0d2;
+  --primary: #7a2030;
+  --primary-light: #a8506a;
+  --primary-ultra-light: #f5eaed;
+  --text: #1e1208;
+  --text-muted: #7a6a60;
+  --text-light: #a8988c;
+  --border: #d8c8b5;
+  --score-gold: #c8922a;
+  --success: #3d8050;
+  --error: #c03030;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15100d;
+    --surface: #211913;
+    --surface-alt: #2a201a;
+    --primary: #c2415a;
+    --primary-light: #d98aa0;
+    --primary-ultra-light: #2a171c;
+    --text: #f3e9dc;
+    --text-muted: #b6a492;
+    --text-light: #8a7869;
+    --border: rgba(212, 162, 74, 0.16);
+    --score-gold: #d4a24a;
+    --success: #5fa877;
+    --error: #e0556a;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #15100d;
+  --surface: #211913;
+  --surface-alt: #2a201a;
+  --primary: #c2415a;
+  --primary-light: #d98aa0;
+  --primary-ultra-light: #2a171c;
+  --text: #f3e9dc;
+  --text-muted: #b6a492;
+  --text-light: #8a7869;
+  --border: rgba(212, 162, 74, 0.16);
+  --score-gold: #d4a24a;
+  --success: #5fa877;
+  --error: #e0556a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-ultra-light: var(--primary-ultra-light);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-light: var(--text-light);
+  --color-border: var(--border);
+  --color-score-gold: var(--score-gold);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}

@@ -1,0 +1,121 @@
+#!/usr/bin/env node
+/**
+ * Import des données de l'app iOS MyVine vers l'app web (Neon + Vercel Blob).
+ *
+ * Usage :
+ *   npm run import:legacy -- <chemin vers .xcappdata | dossier | myvine.db>
+ *   npm run import:legacy -- <chemin> --apply
+ *
+ * Sans --apply : simulation, rien n'est écrit (rapport uniquement).
+ * Avec --apply : upload des photos vers Blob (privé), puis insertion en base
+ * dans une seule transaction, puis vérification des compteurs.
+ *
+ * Rejouable : les UUID sont dérivés des id iOS et les photos gardent le même
+ * chemin, donc relancer l'import ne crée aucun doublon.
+ */
+import fs from "node:fs";
+import pg from "pg";
+import { put } from "@vercel/blob";
+import {
+  buildImportPlan,
+  countImported,
+  listPhotoFiles,
+  locateLegacyFiles,
+  readLegacyDatabase,
+  writePlan,
+} from "./lib/legacy-import.mjs";
+
+const args = process.argv.slice(2);
+const apply = args.includes("--apply");
+const source = args.find((a) => !a.startsWith("--"));
+
+if (!source) {
+  console.error("Usage : npm run import:legacy -- <chemin .xcappdata> [--apply]");
+  process.exit(1);
+}
+
+function printList(title, items, max = 50) {
+  if (items.length === 0) return;
+  console.log(`\n${title} (${items.length}) :`);
+  for (const item of items.slice(0, max)) console.log(`  - ${item}`);
+  if (items.length > max) console.log(`  … et ${items.length - max} autre(s)`);
+}
+
+async function main() {
+  const { dbPath, photosDir } = locateLegacyFiles(source);
+  console.log(`Base iOS     : ${dbPath}`);
+  console.log(`Photos       : ${photosDir ?? "(aucun dossier wine-photos trouvé)"}`);
+
+  const legacy = await readLegacyDatabase(dbPath);
+  const photoFiles = listPhotoFiles(photosDir);
+  const plan = buildImportPlan(legacy, photoFiles);
+
+  console.log(`\nVersion base : ${legacy.dbVersion}`);
+  console.log(`Caves        : ${plan.counts.caves}`);
+  console.log(`Bouteilles   : ${plan.counts.cellarEntries}`);
+  console.log(`Dégustations : ${plan.counts.wines}`);
+  console.log(`Photos       : ${plan.counts.photos} référencée(s) / ${photoFiles.size} sur disque`);
+
+  printList("Avertissements", plan.warnings);
+  printList("ERREURS (bloquantes)", plan.errors);
+
+  if (plan.errors.length > 0) {
+    console.error("\nImport impossible tant que les erreurs ci-dessus ne sont pas résolues.");
+    process.exit(2);
+  }
+
+  if (!apply) {
+    console.log("\nSimulation terminée — rien n'a été écrit. Relancez avec --apply pour importer.");
+    return;
+  }
+
+  for (const name of ["DATABASE_URL", "BLOB_READ_WRITE_TOKEN"]) {
+    if (!process.env[name]) throw new Error(`${name} n'est pas défini (.env.local)`);
+  }
+
+  // 1. Photos d'abord : si l'upload échoue, la base n'a pas été touchée.
+  console.log(`\nUpload de ${plan.photos.length} photo(s) vers Vercel Blob…`);
+  let done = 0;
+  for (const photo of plan.photos) {
+    await put(photo.blobPath, fs.readFileSync(photo.localPath), {
+      access: "private",
+      contentType: photo.contentType,
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    });
+    done += 1;
+    if (done % 10 === 0 || done === plan.photos.length) {
+      console.log(`  ${done}/${plan.photos.length}`);
+    }
+  }
+
+  // 2. Base : une seule transaction.
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const inserted = await writePlan(client, plan);
+    console.log(
+      `\nInsérées : ${inserted.caves} cave(s), ${inserted.cellarEntries} bouteille(s), ${inserted.wines} dégustation(s)` +
+        " (0 = déjà présente lors d'un import précédent).",
+    );
+
+    // 3. Vérification : tout ce qui est dans la source doit être en base.
+    const inDb = await countImported(client);
+    const ok =
+      inDb.caves === plan.counts.caves &&
+      inDb.cellarEntries === plan.counts.cellarEntries &&
+      inDb.wines === plan.counts.wines;
+    console.log(
+      `\nVérification : base = ${inDb.caves} / ${inDb.cellarEntries} / ${inDb.wines}, ` +
+        `source = ${plan.counts.caves} / ${plan.counts.cellarEntries} / ${plan.counts.wines} → ${ok ? "OK" : "ÉCART"}`,
+    );
+    if (!ok) process.exit(3);
+  } finally {
+    await client.end();
+  }
+}
+
+main().catch((error) => {
+  console.error(`\nÉchec : ${error.message}`);
+  process.exit(1);
+});
