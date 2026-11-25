@@ -40,6 +40,12 @@ Next.js 16 (App Router) · React 19 · TypeScript 5.9 · Tailwind 4 · Neon Post
   pas par `BLOB_READ_WRITE_TOKEN`. Ne jamais passer `token:` aux appels
   `put`/`get`/`del` (contrairement à Euskara) : le SDK résout seul les identifiants.
 
+## API externes
+
+- Foursquare Places : `https://places-api.foursquare.com/places/search`, en-têtes
+  `Authorization: Bearer <clé>` et `X-Places-Api-Version: 2025-06-17` (la version
+  `2024-06-01` de l'app iOS est refusée : « Please provide a valid version »).
+
 ## Base de données
 
 **Règle absolue :** le schéma évolue uniquement par migrations `node-pg-migrate`

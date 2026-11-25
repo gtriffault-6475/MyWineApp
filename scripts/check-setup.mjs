@@ -175,7 +175,7 @@ await check("Clé Foursquare", async () => {
     {
       headers: {
         Authorization: `Bearer ${process.env.FOURSQUARE_API_KEY}`,
-        "X-Places-Api-Version": "2024-06-01",
+        "X-Places-Api-Version": "2025-06-17",
         Accept: "application/json",
       },
     },
