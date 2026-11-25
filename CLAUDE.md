@@ -36,6 +36,9 @@ Next.js 16 (App Router) · React 19 · TypeScript 5.9 · Tailwind 4 · Neon Post
   `app/api/.../photo` streame le fichier. Compression côté client avant envoi
   (≈2000 px, JPEG q0.8) à cause de la limite de 4,5 Mo des requêtes Vercel.
 - Secrets uniquement en variables d'environnement (voir `.env.local.example`).
+- Blob s'authentifie par **OIDC** (`BLOB_STORE_ID` + jeton OIDC fourni par Vercel),
+  pas par `BLOB_READ_WRITE_TOKEN`. Ne jamais passer `token:` aux appels
+  `put`/`get`/`del` (contrairement à Euskara) : le SDK résout seul les identifiants.
 
 ## Base de données
 

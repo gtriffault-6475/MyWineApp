@@ -69,8 +69,10 @@ async function main() {
     return;
   }
 
-  for (const name of ["DATABASE_URL", "BLOB_READ_WRITE_TOKEN"]) {
-    if (!process.env[name]) throw new Error(`${name} n'est pas défini (.env.local)`);
+  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL n'est pas défini (.env.local)");
+  // Blob : OIDC (BLOB_STORE_ID + VERCEL_OIDC_TOKEN via `vercel env pull`) ou token.
+  if (!process.env.BLOB_STORE_ID && !process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error("Ni BLOB_STORE_ID ni BLOB_READ_WRITE_TOKEN dans .env.local (npx vercel env pull)");
   }
 
   // 1. Photos d'abord : si l'upload échoue, la base n'a pas été touchée.

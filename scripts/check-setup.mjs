@@ -35,13 +35,24 @@ await check("Variables d'environnement", async () => {
     "APP_PASSWORD",
     "SESSION_SECRET",
     "DATABASE_URL",
-    "BLOB_READ_WRITE_TOKEN",
     "ANTHROPIC_API_KEY",
     "FOURSQUARE_API_KEY",
   ];
   for (const name of required) {
     if (process.env[name]) ok(`${name} définie`);
     else fail(`${name} manquante (Vercel → Settings → Environment Variables, puis vercel env pull)`);
+  }
+  // Blob : authentification OIDC (BLOB_STORE_ID + VERCEL_OIDC_TOKEN, mode par
+  // défaut des stores connectés) ou ancien token BLOB_READ_WRITE_TOKEN.
+  if (process.env.BLOB_STORE_ID) {
+    ok("BLOB_STORE_ID définie (authentification Blob par OIDC)");
+    if (!process.env.VERCEL_OIDC_TOKEN) {
+      warn("VERCEL_OIDC_TOKEN absente : relancez « npx vercel env pull » (le jeton expire après quelques heures)");
+    }
+  } else if (process.env.BLOB_READ_WRITE_TOKEN) {
+    ok("BLOB_READ_WRITE_TOKEN définie (authentification Blob par token)");
+  } else {
+    fail("Ni BLOB_STORE_ID ni BLOB_READ_WRITE_TOKEN : store Blob non connecté au projet ?");
   }
   const secret = process.env.SESSION_SECRET;
   if (secret && !/^[A-Za-z0-9+/]{43}=$/.test(secret)) {
@@ -86,7 +97,9 @@ await check("Base Neon", async () => {
 });
 
 await check("Stockage Vercel Blob", async () => {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error("BLOB_READ_WRITE_TOKEN absent, test ignoré");
+  if (!process.env.BLOB_STORE_ID && !process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error("aucun identifiant Blob, test ignoré");
+  }
   const pathname = `_check/setup-${Date.now()}.txt`;
   const uploaded = await put(pathname, "myvine-check", {
     access: "private",

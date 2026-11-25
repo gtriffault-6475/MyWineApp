@@ -21,7 +21,7 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 | `APP_PASSWORD` | À choisir : mot de passe de connexion à l'app |
 | `SESSION_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
 | `DATABASE_URL` | [console.neon.tech](https://console.neon.tech) → nouveau projet → URL de connexion |
-| `BLOB_READ_WRITE_TOKEN` | Projet Vercel → Storage → créer un store Blob **privé** |
+| `BLOB_STORE_ID` | Ajoutée automatiquement en connectant un store Blob **privé** au projet (Storage). Authentification par OIDC : `vercel env pull` fournit aussi `VERCEL_OIDC_TOKEN`, valable quelques heures — relancer `vercel env pull` s'il a expiré |
 | `ANTHROPIC_API_KEY` | console.anthropic.com (reconnaissance d'étiquettes) |
 | `FOURSQUARE_API_KEY` | Foursquare Developer (recherche de restaurants) |
 
