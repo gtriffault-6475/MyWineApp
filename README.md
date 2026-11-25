@@ -25,6 +25,17 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 | `ANTHROPIC_API_KEY` | console.anthropic.com (reconnaissance d'étiquettes) |
 | `FOURSQUARE_API_KEY` | Foursquare Developer (recherche de restaurants) |
 
+### Vérifier la configuration
+
+```bash
+npx vercel env pull .env.local
+npm run check:setup -- https://<projet>.vercel.app
+```
+
+Teste réellement chaque service (connexion Neon et migrations, écriture/lecture
+Blob privé, clés Anthropic et Foursquare, déploiement et mot de passe) sans
+afficher aucun secret.
+
 ## Récupérer les données de l'app iOS
 
 ### 1. Sauvegarder le conteneur de l'app (sur le Mac)

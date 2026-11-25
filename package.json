@@ -11,7 +11,8 @@
     "test:coverage": "vitest run --coverage",
     "migrate": "node --env-file=.env.local node_modules/.bin/node-pg-migrate up",
     "migrate:create": "node --env-file=.env.local node_modules/.bin/node-pg-migrate create",
-    "import:legacy": "node --env-file=.env.local scripts/import-legacy.mjs"
+    "import:legacy": "node --env-file=.env.local scripts/import-legacy.mjs",
+    "check:setup": "node --env-file=.env.local scripts/check-setup.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.5",
