@@ -11,7 +11,24 @@
 import { put, get, del, BlobAccessError } from "@vercel/blob";
 import pg from "pg";
 
-const deployUrl = process.argv.slice(2).find((a) => a.startsWith("http"));
+// Tolère « https:xxx », « xxx.vercel.app » sans schéma, etc.
+function normalizeUrl(raw) {
+  if (!raw) return null;
+  const host = raw.replace(/^https?:\/*/i, "").replace(/\/.*$/, "");
+  return `https://${host}`;
+}
+const deployUrl = normalizeUrl(process.argv.slice(2).find((a) => !a.startsWith("--")));
+
+/** Message d'erreur renvoyé par une API (jamais de secret dedans), tronqué. */
+async function apiError(res) {
+  const body = await res.text().catch(() => "");
+  let message = body;
+  try {
+    const json = JSON.parse(body);
+    message = json?.error?.message ?? json?.message ?? body;
+  } catch {}
+  return `HTTP ${res.status}${message ? ` — ${String(message).slice(0, 200)}` : ""}`;
+}
 let failures = 0;
 
 const ok = (msg) => console.log(`✅ ${msg}`);
@@ -59,7 +76,10 @@ await check("Variables d'environnement", async () => {
     fail("SESSION_SECRET mal formé : 44 caractères base64 finissant par « = » attendus");
   }
   const key = process.env.ANTHROPIC_API_KEY;
-  if (key && !key.startsWith("sk-ant-")) fail("ANTHROPIC_API_KEY ne commence pas par « sk-ant- »");
+  if (key && !key.startsWith("sk-ant-")) {
+    const hint = key.trim() !== key ? " (espaces ou retour à la ligne autour de la valeur)" : "";
+    fail(`ANTHROPIC_API_KEY ne commence pas par « sk-ant- »${hint} — longueur ${key.length} caractères`);
+  }
 });
 
 await check("Base Neon", async () => {
@@ -124,7 +144,7 @@ await check("Stockage Vercel Blob", async () => {
     await del(pub.url);
     fail("Le store accepte les fichiers publics : recréez-le en accès « Private »");
   } catch (error) {
-    if (error instanceof BlobAccessError) {
+    if (error instanceof BlobAccessError || /private store|private access/i.test(error.message ?? "")) {
       ok("Store en accès privé (envoi public refusé, comme attendu)");
     } else if (error.message?.startsWith("Le store accepte")) {
       throw error;
@@ -144,13 +164,14 @@ await check("Clé Anthropic", async () => {
     },
   });
   if (res.ok) ok("Clé acceptée par l'API Anthropic");
-  else fail(`API Anthropic : HTTP ${res.status}`);
+  else fail(`API Anthropic : ${await apiError(res)}`);
 });
 
 await check("Clé Foursquare", async () => {
   if (!process.env.FOURSQUARE_API_KEY) throw new Error("clé absente, test ignoré");
   const res = await fetch(
-    "https://places-api.foursquare.com/places/search?query=restaurant&near=Paris&limit=1",
+    // Mêmes paramètres que l'app iOS (ll + radius autour de Paris).
+    "https://places-api.foursquare.com/places/search?query=restaurant&limit=1&ll=48.8566%2C2.3522&radius=5000",
     {
       headers: {
         Authorization: `Bearer ${process.env.FOURSQUARE_API_KEY}`,
@@ -160,13 +181,15 @@ await check("Clé Foursquare", async () => {
     },
   );
   if (res.ok) ok("Clé acceptée par l'API Foursquare");
-  else fail(`API Foursquare : HTTP ${res.status}`);
+  else fail(`API Foursquare : ${await apiError(res)}`);
 });
 
 if (deployUrl) {
   await check(`Déploiement ${deployUrl}`, async () => {
     const base = deployUrl.replace(/\/$/, "");
-    const login = await fetch(`${base}/login`);
+    const login = await fetch(`${base}/login`).catch((e) => {
+      throw new Error(`${base} injoignable (${e.cause?.code ?? e.message}) — vérifiez l'URL dans Vercel`);
+    });
     if (login.status === 200) ok("Page de connexion servie");
     else fail(`/login : HTTP ${login.status} (déploiement en échec ? voir l'onglet Deployments)`);
 
