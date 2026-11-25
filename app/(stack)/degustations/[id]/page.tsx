@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getWineById } from "@/lib/db/wines";
 import { isUuid } from "@/lib/validation/uuid";
@@ -37,7 +38,17 @@ export default async function WineDetailPage({ params }: Props) {
       <PageHeader
         title={wine.name}
         back={{ href: "/degustations", label: "Dégustations" }}
-        actions={<DeleteWineButton id={wine.id} name={wine.name} />}
+        actions={
+          <>
+            <Link
+              href={`/degustations/${wine.id}/modifier`}
+              className="text-base font-medium text-primary"
+            >
+              Modifier
+            </Link>
+            <DeleteWineButton id={wine.id} name={wine.name} />
+          </>
+        }
       />
 
       <div className="mx-auto max-w-xl">

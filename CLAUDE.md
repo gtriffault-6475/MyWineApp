@@ -16,7 +16,9 @@ Stack et conventions calquées sur le projet Euskara.
 - Photo d'étiquette : **appareil photo ET photothèque**. Utiliser
   `<input type="file" accept="image/*">` **sans** l'attribut `capture` — sur iOS,
   `capture` force l'appareil photo et masque la photothèque.
-- Reconnaissance d'étiquette : Claude **Haiku**, appelé côté serveur uniquement.
+- Reconnaissance d'étiquette : Claude **Haiku 5.5** (`claude-haiku-5-5`, effort `low`,
+  sorties structurées), appelé côté serveur uniquement (`lib/clients/label-recognition.ts`).
+  L'app iOS utilisait `claude-haiku-4-5`.
 - Hébergement : Vercel (`*.vercel.app`, pas de domaine) + Neon + Vercel Blob privé.
 
 ## Stack

@@ -43,6 +43,11 @@ export function WinePhoto({
       loading={eager ? "eager" : "lazy"}
       decoding="async"
       onError={() => setFailed(true)}
+      // Une image en erreur avant l'hydratation ne déclenche plus onError :
+      // on vérifie son état au montage.
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth === 0) setFailed(true);
+      }}
       className={`object-cover ${className ?? ""}`}
     />
   );
