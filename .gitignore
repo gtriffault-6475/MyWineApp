@@ -51,3 +51,8 @@ next-env.d.ts
 # artefact de build par la CI — pas une source à committer)
 test-dashboard.html
 .vitest-dashboard-results.json
+
+# Sauvegardes de l'app iOS (données personnelles) : jamais dans git
+*.xcappdata
+com.myvineapp*
+MyVine/
