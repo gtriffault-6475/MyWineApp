@@ -1,6 +1,10 @@
 /**
- * Lecture d'une sauvegarde locale de l'iPhone faite avec le Finder (ou iTunes),
- * pour récupérer les fichiers de MyVine sans Xcode.
+ * Lecture d'une sauvegarde locale de l'iPhone faite avec le Finder (ou iTunes).
+ *
+ * LIMITE : l'app iOS exclut sa base SQLite des sauvegardes (dossier
+ * Library/LocalDatabase marqué NSURLIsExcludedFromBackupKey par
+ * react-native-sqlite-storage). En pratique une sauvegarde Finder ne contient
+ * que les photos : la base doit venir du conteneur Xcode (.xcappdata).
  *
  * Format (iOS 10 et suivants) : un dossier par appareil contenant
  *   - Manifest.db : index SQLite (table Files : fileID, domain, relativePath, flags)
@@ -131,9 +135,17 @@ export async function extractFromFinderBackup(source, bundleId = MYVINE_BUNDLE_I
     manifest.close();
   }
   if (!files.some((f) => /(^|\/)myvine\.db$/.test(f.relativePath))) {
+    // react-native-sqlite-storage (location « default ») range la base dans
+    // Library/LocalDatabase et marque ce dossier « exclu des sauvegardes » :
+    // une sauvegarde Finder ou iCloud ne contient donc jamais la base.
     throw new FinderBackupError(
-      `La base de MyVine (domaine AppDomain-${bundleId}) est absente de cette sauvegarde. ` +
-        "L'app est-elle bien installée sur cet iPhone, et la sauvegarde terminée ?",
+      files.length > 0
+        ? "Cette sauvegarde contient les photos de MyVine mais pas sa base : l'app iOS " +
+            "exclut sa base des sauvegardes iPhone (Finder et iCloud). Utilisez Xcode → " +
+            "Window → Devices and Simulators → MyVine → Download Container…, puis " +
+            "relancez l'import sur le fichier .xcappdata obtenu."
+        : `MyVine (domaine AppDomain-${bundleId}) est absente de cette sauvegarde. ` +
+            "L'app est-elle bien installée sur cet iPhone, et la sauvegarde terminée ?",
     );
   }
 

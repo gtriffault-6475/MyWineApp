@@ -49,31 +49,19 @@ afficher aucun secret.
 Le conteneur contient `AppData/Library/LocalDatabase/myvine.db` (SQLite) et
 `AppData/Documents/wine-photos/` (photos d'étiquettes).
 
-#### Sans Xcode : sauvegarde Finder
+#### Sans Xcode ? Non, pas pour la base
 
-1. Brancher l'iPhone, l'ouvrir dans le **Finder** → onglet *Général*.
-2. Choisir « Sauvegarder toutes les données de l'iPhone sur ce Mac » et
-   **décocher « Chiffrer la sauvegarde locale »** (une sauvegarde chiffrée est
-   illisible par le script).
-3. *Sauvegarder maintenant* et attendre la fin.
-4. Donner au Terminal l'**accès complet au disque** (Réglages Système →
-   Confidentialité et sécurité → Accès complet au disque), sinon macOS bloque la
-   lecture du dossier de sauvegarde.
-
-Le script accepte directement le dossier des sauvegardes : il choisit la plus
-récente qui contient MyVine, en extrait la base et les photos dans un dossier
-temporaire (supprimé à la fin) et ne modifie jamais la sauvegarde.
+L'app iOS **exclut sa base de données des sauvegardes iPhone** (Finder comme
+iCloud) : la bibliothèque `react-native-sqlite-storage` range `myvine.db` dans
+`Library/LocalDatabase` et marque ce dossier « à ne pas sauvegarder ». Une
+sauvegarde Finder ne contient donc que les photos. Seul **Xcode → Download
+Container…** récupère la base. Le script sait lire une sauvegarde Finder (non
+chiffrée), mais s'arrête avec ce message s'il n'y trouve pas la base.
 
 ### 2. Simuler l'import (n'écrit rien)
 
 ```bash
 npm run import:legacy -- ~/Desktop/MyVine.xcappdata
-```
-
-ou, depuis une sauvegarde Finder :
-
-```bash
-npm run import:legacy -- ~/Library/Application\ Support/MobileSync/Backup
 ```
 
 Le rapport affiche les compteurs, les avertissements (photo manquante, lien vers

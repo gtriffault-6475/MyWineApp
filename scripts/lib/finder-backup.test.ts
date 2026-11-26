@@ -141,9 +141,15 @@ describe("extractFromFinderBackup", () => {
     await expect(extractFromFinderBackup(backup)).rejects.toBeInstanceOf(FinderBackupError);
   });
 
+  it("explains that iOS excludes the database from backups (photos only)", async () => {
+    // Cas réel : react-native-sqlite-storage exclut Library/LocalDatabase des sauvegardes.
+    const backup = makeBackup("photos-seules", { "Documents/wine-photos/a.jpg": Buffer.from("jpeg") });
+    await expect(extractFromFinderBackup(backup)).rejects.toThrow(/exclut sa base.*Download Container/);
+  });
+
   it("fails clearly when MyVine is not in the backup", async () => {
     const backup = makeBackup("sans-app", { "Documents/notes.txt": Buffer.from("x") });
-    await expect(extractFromFinderBackup(backup)).rejects.toThrow(/base de MyVine.*absente/);
+    await expect(extractFromFinderBackup(backup)).rejects.toThrow(/MyVine.*absente/);
     await expect(resolveDeviceBackup(path.join(root, "vide"))).rejects.toThrow(/Aucune sauvegarde/);
   });
 });
