@@ -126,8 +126,9 @@ async function run(root) {
   }
 
   // 2. Base : une seule transaction.
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
+  console.log("\nConnexion à la base…");
+  const client = await connectWithRetry(process.env.DATABASE_URL);
+  console.log("Insertion des données (transaction unique)…");
   try {
     const inserted = await writePlan(client, plan);
     console.log(
@@ -151,11 +152,46 @@ async function run(root) {
   }
 }
 
+/**
+ * Connexion à Neon avec quelques nouvelles tentatives : une base Neon en veille
+ * peut mettre quelques secondes à répondre au premier appel.
+ */
+async function connectWithRetry(connectionString, attempts = 3) {
+  for (let i = 1; ; i++) {
+    const client = new pg.Client({ connectionString, connectionTimeoutMillis: 15_000 });
+    try {
+      await client.connect();
+      return client;
+    } catch (error) {
+      await client.end().catch(() => {});
+      if (i >= attempts) throw error;
+      console.log(`  tentative ${i} échouée (${describeError(error)}), nouvel essai…`);
+      await new Promise((r) => setTimeout(r, 3000 * i));
+    }
+  }
+}
+
+/** Message lisible même pour les erreurs sans texte (ex. AggregateError réseau). */
+function describeError(error) {
+  if (!(error instanceof Error)) return String(error);
+  const parts = [error.message || error.name];
+  if (error.code) parts.push(`code ${error.code}`);
+  if (Array.isArray(error.errors) && error.errors.length > 0) {
+    parts.push(error.errors.map((e) => e?.message || e?.code || String(e)).join(" ; "));
+  }
+  return parts.filter(Boolean).join(" — ");
+}
+
 main()
   .then((code) => {
     process.exitCode = code;
   })
   .catch((error) => {
-    console.error(`\nÉchec : ${error.message}`);
+    console.error(`\nÉchec : ${describeError(error)}`);
+    if (process.env.DEBUG) console.error(error);
+    else console.error("(Relancez avec DEBUG=1 devant la commande pour le détail complet.)");
+    console.error(
+      "La base n'a pas été modifiée (transaction annulée). L'import peut être relancé sans risque de doublon.",
+    );
     process.exitCode = 1;
   });
