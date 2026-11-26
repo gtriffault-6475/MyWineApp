@@ -21,7 +21,6 @@
  * chemin, donc relancer l'import ne crée aucun doublon.
  */
 import fs from "node:fs";
-import pg from "pg";
 import { put } from "@vercel/blob";
 import {
   buildImportPlan,
@@ -36,6 +35,7 @@ import {
   isFinderBackup,
   listDeviceBackups,
 } from "./lib/finder-backup.mjs";
+import { connectDatabase } from "./lib/db-connect.mjs";
 
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
@@ -158,12 +158,11 @@ async function run(root) {
  */
 async function connectWithRetry(connectionString, attempts = 3) {
   for (let i = 1; ; i++) {
-    const client = new pg.Client({ connectionString, connectionTimeoutMillis: 15_000 });
     try {
-      await client.connect();
+      const { client, transport } = await connectDatabase(connectionString);
+      console.log(`Connecté (${transport}).`);
       return client;
     } catch (error) {
-      await client.end().catch(() => {});
       if (i >= attempts) throw error;
       console.log(`  tentative ${i} échouée (${describeError(error)}), nouvel essai…`);
       await new Promise((r) => setTimeout(r, 3000 * i));
@@ -173,6 +172,12 @@ async function connectWithRetry(connectionString, attempts = 3) {
 
 /** Message lisible même pour les erreurs sans texte (ex. AggregateError réseau). */
 function describeError(error) {
+  // Le pilote WebSocket de Neon remonte des ErrorEvent (pas des Error).
+  if (error && !(error instanceof Error) && typeof error === "object") {
+    const inner = error.error instanceof Error ? error.error : null;
+    if (inner) return describeError(inner);
+    if (typeof error.message === "string" && error.message) return error.message;
+  }
   if (!(error instanceof Error)) return String(error);
   const parts = [error.message || error.name];
   if (error.code) parts.push(`code ${error.code}`);

@@ -9,7 +9,7 @@
  * N'affiche jamais la valeur d'un secret. Le fichier de test Blob est supprimé.
  */
 import { put, get, del, BlobAccessError } from "@vercel/blob";
-import pg from "pg";
+import { connectDatabase } from "./lib/db-connect.mjs";
 
 // Tolère « https:xxx », « xxx.vercel.app » sans schéma, etc.
 function normalizeUrl(raw) {
@@ -84,9 +84,9 @@ await check("Variables d'environnement", async () => {
 
 await check("Base Neon", async () => {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL absente, test ignoré");
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
+  const { client, transport } = await connectDatabase(process.env.DATABASE_URL);
   try {
+    ok(`Canal : ${transport}`);
     const { rows } = await client.query(
       "SELECT current_database() AS db, split_part(version(), ' ', 2) AS v",
     );
