@@ -81,3 +81,12 @@ npm run test        # Vitest
 npm run lint
 npx tsc --noEmit
 ```
+
+Les tests d'intégration SQL (`lib/db/*.integration.test.ts`) sont ignorés par
+défaut. Pour les lancer, créer une base Postgres de test **jetable** (elle est
+vidée), la migrer, puis renseigner `TEST_DATABASE_URL` dans `.env.test` :
+
+```bash
+DATABASE_URL=<url de test> npx node-pg-migrate up
+npm run test:db
+```

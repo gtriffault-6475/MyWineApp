@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:db": "node --env-file=.env.test node_modules/.bin/vitest run lib/db",
     "migrate": "node --env-file=.env.local node_modules/.bin/node-pg-migrate up",
     "migrate:create": "node --env-file=.env.local node_modules/.bin/node-pg-migrate create",
     "import:legacy": "node --env-file=.env.local scripts/import-legacy.mjs",

@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
+    // Les tests d'intégration SQL partagent une même base : pas de fichiers en parallèle.
+    fileParallelism: false,
     coverage: {
       provider: "istanbul",
       reporter: ["text", "html", "json"],

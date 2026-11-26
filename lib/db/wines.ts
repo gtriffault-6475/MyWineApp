@@ -4,6 +4,7 @@ import { sql } from "@/lib/db/client";
 import type { Wine } from "@/lib/wines/wine";
 import type { WineInput } from "@/lib/wines/input";
 import { orphanOrNull } from "@/lib/db/photos";
+import type { WineSearchFilters } from "@/lib/wines/search";
 
 // Les dates sont renvoyées en texte : jours calendaires « AAAA-MM-JJ » et
 // horodatages ISO, sans conversion de fuseau par le driver.
@@ -20,6 +21,53 @@ export async function listWines(): Promise<Wine[]> {
   await connection();
   return (await sql.query(
     `SELECT ${WINE_COLUMNS} FROM wine ORDER BY drunk_at DESC, created_at DESC`,
+  )) as unknown as Wine[];
+}
+
+// Tris de l'app iOS. SQLite range les valeurs vides en tête des tris
+// croissants et en fin des tris décroissants : on le reproduit explicitement.
+const SORT_CLAUSES: Record<WineSearchFilters["sortBy"], string> = {
+  date_desc: "drunk_at DESC, created_at DESC",
+  date_asc: "drunk_at ASC, created_at ASC",
+  score_desc: "score DESC NULLS LAST, drunk_at DESC",
+  score_asc: "score ASC NULLS FIRST, drunk_at DESC",
+  name_asc: "name ASC",
+  vintage_desc: "vintage DESC NULLS LAST, drunk_at DESC",
+};
+
+const SEARCH_FIELDS = ["name", "producer", "appellation", "restaurant_name", "food_pairing", "companion"];
+
+/** Échappe %, _ et \ pour qu'ils soient cherchés tels quels dans un ILIKE. */
+export function escapeLike(term: string): string {
+  return term.replace(/[\\%_]/g, (c) => "\\" + c);
+}
+
+/** Recherche avec filtres (searchWines iOS) ; insensible à la casse. */
+export async function searchWines(filters: WineSearchFilters): Promise<Wine[]> {
+  await connection();
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  const param = (value: unknown) => {
+    params.push(value);
+    return `$${params.length}`;
+  };
+
+  const term = filters.term.trim();
+  if (term) {
+    const like = param(`%${escapeLike(term)}%`);
+    conditions.push(`(${SEARCH_FIELDS.map((f) => `${f} ILIKE ${like}`).join(" OR ")})`);
+  }
+  if (filters.buyAgainOnly) conditions.push("buy_again");
+  if (filters.locationType) conditions.push(`location_type = ${param(filters.locationType)}`);
+  if (filters.scoreMin !== null) conditions.push(`score >= ${param(filters.scoreMin)}`);
+  if (filters.scoreMax !== null) conditions.push(`score <= ${param(filters.scoreMax)}`);
+  if (filters.dateFrom) conditions.push(`drunk_at >= ${param(filters.dateFrom)}`);
+  if (filters.dateTo) conditions.push(`drunk_at <= ${param(filters.dateTo)}`);
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  return (await sql.query(
+    `SELECT ${WINE_COLUMNS} FROM wine ${where} ORDER BY ${SORT_CLAUSES[filters.sortBy]}`,
+    params,
   )) as unknown as Wine[];
 }
 
