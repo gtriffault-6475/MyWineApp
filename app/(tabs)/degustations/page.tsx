@@ -4,6 +4,7 @@ import { listWines } from "@/lib/db/wines";
 import { PageHeader } from "@/app/components/page-header";
 import { EmptyState } from "@/app/components/empty-state";
 import { WineCard } from "@/app/components/wine-card";
+import { Fab } from "@/app/components/fab";
 
 export const metadata: Metadata = { title: "Dégustations · MyVine" };
 
@@ -36,18 +37,7 @@ export default async function DegustationsPage() {
         </ul>
       )}
 
-      {/* Bouton flottant « + » au-dessus de la barre d'onglets, comme iOS */}
-      <Link
-        href="/degustations/nouvelle"
-        aria-label="Ajouter une dégustation"
-        className="fixed right-6 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-[28px] leading-none text-white active:opacity-85"
-        style={{
-          bottom: "calc(54px + env(safe-area-inset-bottom) + 24px)",
-          boxShadow: "var(--shadow-fab)",
-        }}
-      >
-        +
-      </Link>
+      <Fab href="/degustations/nouvelle" label="Ajouter une dégustation" />
     </>
   );
 }

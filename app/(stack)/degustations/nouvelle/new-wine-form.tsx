@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { WineFormValues } from "@/lib/wines/input";
 
 // Rendu côté téléphone uniquement : la date proposée par défaut est « aujourd'hui »
 // dans le fuseau de l'utilisateur, pas celui du serveur.
@@ -16,6 +17,12 @@ const WineForm = dynamic(
   },
 );
 
-export function NewWineForm() {
-  return <WineForm mode="create" cancelHref="/degustations" />;
+export function NewWineForm({
+  initial,
+  cancelHref,
+}: {
+  initial?: Partial<WineFormValues>;
+  cancelHref: string;
+}) {
+  return <WineForm mode="create" initial={initial} cancelHref={cancelHref} />;
 }

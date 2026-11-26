@@ -10,7 +10,7 @@ import {
   type WineFormValues,
 } from "@/lib/wines/input";
 import { photoUrl } from "@/lib/wines/wine";
-import { compressPhoto } from "@/lib/photos/compress";
+import { errorMessage, readError, uploadLabelPhoto } from "@/lib/photos/upload";
 import { StarRating } from "@/app/components/star-rating";
 import { SectionTitle, TextField } from "./fields";
 import { ScorePicker } from "./score-picker";
@@ -22,13 +22,6 @@ import { LabelPhotoInput } from "./label-photo-input";
 type Props =
   | { mode: "create"; initial?: Partial<WineFormValues>; cancelHref: string }
   | { mode: "edit"; wineId: string; initial: WineFormValues; cancelHref: string };
-
-const NETWORK_ERROR = "Pas de connexion. Vérifiez le réseau et réessayez.";
-
-async function readError(res: Response, fallback: string): Promise<string> {
-  const data = await res.json().catch(() => null);
-  return data?.error ?? fallback;
-}
 
 /** Formulaire d'ajout / de modification d'une dégustation (WineForm.tsx iOS). */
 export function WineForm(props: Props) {
@@ -76,7 +69,7 @@ export function WineForm(props: Props) {
       }));
       if (result.name) setErrors((e) => ({ ...e, name: undefined }));
     } catch (error) {
-      window.alert(error instanceof TypeError ? NETWORK_ERROR : (error as Error).message);
+      window.alert(errorMessage(error));
     } finally {
       setPhotoBusy(null);
     }
@@ -84,22 +77,14 @@ export function WineForm(props: Props) {
 
   async function handlePick(file: File) {
     setPhotoBusy("upload");
-    let localUrl: string | null = null;
     try {
-      const blob = await compressPhoto(file);
-      localUrl = URL.createObjectURL(blob);
-      setPreview(localUrl);
-      const body = new FormData();
-      body.set("photo", blob, "etiquette.jpg");
-      const res = await fetch("/api/photos", { method: "POST", body });
-      if (!res.ok) throw new Error(await readError(res, "Envoi de la photo impossible."));
-      const { photo_path } = (await res.json()) as { photo_path: string };
-      update("photo_path", photo_path);
+      const photoPath = await uploadLabelPhoto(file, setPreview);
+      update("photo_path", photoPath);
       setPhotoBusy(null);
-      await analyze(photo_path);
+      await analyze(photoPath);
     } catch (error) {
       setPreview(null);
-      window.alert(error instanceof TypeError ? NETWORK_ERROR : (error as Error).message);
+      window.alert(errorMessage(error));
       setPhotoBusy(null);
     }
   }
@@ -134,7 +119,7 @@ export function WineForm(props: Props) {
       router.replace(props.cancelHref);
       router.refresh();
     } catch (error) {
-      window.alert(error instanceof TypeError ? NETWORK_ERROR : (error as Error).message);
+      window.alert(errorMessage(error));
       setSubmitting(false);
     }
   }

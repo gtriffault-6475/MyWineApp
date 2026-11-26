@@ -12,11 +12,13 @@ export function LabelPhotoInput({
   busyLabel,
   onPick,
   onRemove,
+  height = 220,
 }: {
   src: string | null;
   busyLabel: string | null;
   onPick: (file: File) => void;
   onRemove: (() => void) | null;
+  height?: number;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -40,7 +42,8 @@ export function LabelPhotoInput({
         disabled={busyLabel !== null}
         onClick={() => inputRef.current?.click()}
         aria-label={src ? "Changer la photo de l'étiquette" : "Ajouter une photo de l'étiquette"}
-        className={`relative flex h-[220px] w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-xl bg-surface ${
+        style={{ height }}
+        className={`relative flex w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-xl bg-surface ${
           src ? "" : "border-[1.5px] border-dashed border-border"
         }`}
       >

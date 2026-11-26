@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-// L'app iOS s'ouvre sur l'onglet Cave ; tant que cet écran n'est pas
-// reconstruit, on ouvre sur les Dégustations.
+// Comme l'app iOS, MyVine s'ouvre sur l'onglet Cave.
 export default function Home() {
-  redirect("/degustations");
+  redirect("/caves");
 }

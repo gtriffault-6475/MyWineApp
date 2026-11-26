@@ -4,7 +4,7 @@ import { useState } from "react";
 
 /**
  * Photo d'étiquette servie par /api/photos. Si elle manque ou ne charge pas,
- * affiche le même verre 🍷 que l'app iOS plutôt qu'une image cassée.
+ * affiche le même emoji que l'app iOS plutôt qu'une image cassée.
  */
 export function WinePhoto({
   src,
@@ -12,12 +12,15 @@ export function WinePhoto({
   className,
   emojiSize,
   eager = false,
+  placeholder = "🍷",
 }: {
   src: string | null;
   alt: string;
   className?: string;
   emojiSize: number;
   eager?: boolean;
+  /** Emoji affiché sans photo : 🍷 dégustation, 🍾 bouteille (comme iOS). */
+  placeholder?: string;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -29,7 +32,7 @@ export function WinePhoto({
         aria-label="Pas de photo"
       >
         <span style={{ fontSize: emojiSize }} aria-hidden="true">
-          🍷
+          {placeholder}
         </span>
       </div>
     );
