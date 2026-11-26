@@ -24,6 +24,9 @@
   --tab-inactive: var(--text-muted);
   --wine-font: inherit;
   --wine-weight: 600;
+  --kpi-color: var(--text);
+  --kpi-font: inherit;
+  --kpi-weight: 700;
   --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.06);
   --shadow-fab: 0 4px 14px rgb(122 32 48 / 0.4);
 }
@@ -47,6 +50,9 @@
     --tab-inactive: var(--text-light);
     --wine-font: var(--font-cormorant), Georgia, serif;
     --wine-weight: 400;
+    --kpi-color: var(--score-gold);
+    --kpi-font: var(--font-cormorant), Georgia, serif;
+    --kpi-weight: 300;
     --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.45);
     --shadow-fab: 0 8px 22px rgb(122 32 48 / 0.55);
   }
@@ -70,6 +76,9 @@
   --tab-inactive: var(--text-light);
   --wine-font: var(--font-cormorant), Georgia, serif;
   --wine-weight: 400;
+  --kpi-color: var(--score-gold);
+  --kpi-font: var(--font-cormorant), Georgia, serif;
+  --kpi-weight: 300;
   --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.45);
   --shadow-fab: 0 8px 22px rgb(122 32 48 / 0.55);
 }
@@ -96,6 +105,13 @@
 body {
   background: var(--bg);
   color: var(--text);
+}
+
+/* Chiffres clés des Stats : police système en clair, Cormorant Light dorée en sombre. */
+.kpi-value {
+  color: var(--kpi-color);
+  font-family: var(--kpi-font);
+  font-weight: var(--kpi-weight);
 }
 
 /* Nom d'un vin : police système en clair, Cormorant en sombre (comme iOS). */

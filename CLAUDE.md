@@ -42,6 +42,25 @@ Next.js 16 (App Router) · React 19 · TypeScript 5.9 · Tailwind 4 · Neon Post
   pas par `BLOB_READ_WRITE_TOKEN`. Ne jamais passer `token:` aux appels
   `put`/`get`/`del` (contrairement à Euskara) : le SDK résout seul les identifiants.
 
+## Écrans (correspondance iOS)
+
+| URL | Écran iOS |
+|---|---|
+| `/caves` (onglet Cave, écran d'accueil) | CaveListScreen |
+| `/caves/[id]` | CellarBottlesScreen |
+| `/bouteilles/[id]`, `/bouteilles/nouvelle?cave=…`, `/bouteilles/[id]/modifier` | CellarDetailScreen, AddCellarEntryScreen |
+| `/degustations`, `/degustations/[id]` | DegustationsScreen, WineDetailScreen |
+| `/degustations/nouvelle?bouteille=…`, `/degustations/[id]/modifier` | AddScreen, WineEditScreen |
+| `/recherche?q=…&tri=…` (filtres dans l'URL) | SearchScreen |
+| `/stats` | StatsScreen |
+| `/parametres` (thème en cookie `myvine_theme`) | SettingsScreen |
+
+Écarts voulus avec iOS : formulaire de dégustation pré-rempli même après
+l'ouverture de la dernière bouteille (bug iOS), filtres de recherche conservés
+dans l'URL, menu « ⋯ » au lieu de l'appui long sur une cave, clés API en
+variables d'environnement (Paramètres affiche seulement leur présence),
+bouton « Se déconnecter ».
+
 ## API externes
 
 - Foursquare Places : `https://places-api.foursquare.com/places/search`, en-têtes

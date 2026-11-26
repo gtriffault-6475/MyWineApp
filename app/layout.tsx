@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { cookies } from "next/headers";
+import { parseAppearance, THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
 
 // Polices de l'app iOS, servies via /_next/static (hors du Proxy d'auth,
@@ -28,13 +30,20 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Thème choisi dans les Paramètres ; « Auto » (pas d'attribut) suit le téléphone.
+  const appearance = parseAppearance((await cookies()).get(THEME_COOKIE)?.value);
+
   return (
-    <html lang="fr" className={`h-full antialiased ${cormorant.variable}`}>
+    <html
+      lang="fr"
+      data-theme={appearance === "auto" ? undefined : appearance}
+      className={`h-full antialiased ${cormorant.variable}`}
+    >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );

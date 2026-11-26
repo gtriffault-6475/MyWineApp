@@ -79,3 +79,50 @@ describe.skipIf(!url)("searchWines", async () => {
     expect((await names({ sortBy: "name_asc" }))[0]).toBe("Crémant 100%");
   });
 });
+
+describe.skipIf(!url)("getStats", async () => {
+  const { sql } = await import("./client");
+  const { getStats, buyAgainPercent } = await import("./stats");
+
+  afterAll(async () => {
+    await sql.query("DELETE FROM wine");
+  });
+
+  it("returns zeros on an empty journal", async () => {
+    await sql.query("DELETE FROM wine");
+    expect(await getStats()).toEqual({
+      total: 0,
+      avg_score: null,
+      buy_again_count: 0,
+      top_appellations: [],
+      top_producers: [],
+    });
+  });
+
+  it("computes totals, average (unrated ignored) and top 5", async () => {
+    await sql.query("DELETE FROM wine");
+    await sql.query(`
+      INSERT INTO wine (name, producer, appellation, score, drunk_at, buy_again) VALUES
+        ('A', 'Foillard', 'Morgon', 8, '2025-01-01', true),
+        ('B', 'Foillard', 'Morgon', 6, '2025-01-02', false),
+        ('C', 'Cotat', 'Sancerre', NULL, '2025-01-03', false),
+        ('D', '', 'Chablis', 7, '2025-01-04', true)
+    `);
+    const stats = await getStats();
+    expect(stats).toEqual({
+      total: 4,
+      avg_score: 7,
+      buy_again_count: 2,
+      top_appellations: [
+        { label: "Morgon", count: 2 },
+        { label: "Chablis", count: 1 },
+        { label: "Sancerre", count: 1 },
+      ],
+      top_producers: [
+        { label: "Foillard", count: 2 },
+        { label: "Cotat", count: 1 },
+      ],
+    });
+    expect(buyAgainPercent(stats)).toBe(50);
+  });
+});
