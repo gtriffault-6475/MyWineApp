@@ -4,7 +4,14 @@
  *
  * Usage :
  *   npm run import:legacy -- <chemin vers .xcappdata | dossier | myvine.db>
+ *   npm run import:legacy -- <sauvegarde Finder de l'iPhone (non chiffrée)>
  *   npm run import:legacy -- <chemin> --apply
+ *
+ * Sources acceptées :
+ *   - le conteneur téléchargé avec Xcode (Download Container… → .xcappdata) ;
+ *   - une sauvegarde locale faite avec le Finder : le dossier d'un appareil, ou
+ *     directement ~/Library/Application Support/MobileSync/Backup (la sauvegarde
+ *     la plus récente contenant MyVine est alors choisie).
  *
  * Sans --apply : simulation, rien n'est écrit (rapport uniquement).
  * Avec --apply : upload des photos vers Blob (privé), puis insertion en base
@@ -24,13 +31,20 @@ import {
   readLegacyDatabase,
   writePlan,
 } from "./lib/legacy-import.mjs";
+import {
+  extractFromFinderBackup,
+  isFinderBackup,
+  listDeviceBackups,
+} from "./lib/finder-backup.mjs";
 
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
 const source = args.find((a) => !a.startsWith("--"));
 
 if (!source) {
-  console.error("Usage : npm run import:legacy -- <chemin .xcappdata> [--apply]");
+  console.error(
+    "Usage : npm run import:legacy -- <chemin .xcappdata | sauvegarde Finder> [--apply]",
+  );
   process.exit(1);
 }
 
@@ -42,7 +56,27 @@ function printList(title, items, max = 50) {
 }
 
 async function main() {
-  const { dbPath, photosDir } = locateLegacyFiles(source);
+  // Sauvegarde Finder : on extrait d'abord les fichiers de MyVine dans un
+  // dossier temporaire, puis l'import se déroule comme pour un .xcappdata.
+  if (isFinderBackup(source) || listDeviceBackups(source).length > 0) {
+    console.log("Sauvegarde Finder détectée, extraction des fichiers de MyVine…");
+    const extracted = await extractFromFinderBackup(source);
+    console.log(`Sauvegarde   : ${extracted.backupDir}`);
+    if (extracted.missing.length > 0) {
+      printList("Fichiers indexés mais absents de la sauvegarde", extracted.missing);
+    }
+    try {
+      return await run(extracted.dir);
+    } finally {
+      extracted.cleanup();
+    }
+  }
+  return run(source);
+}
+
+/** Import depuis un dossier qui contient myvine.db (et wine-photos). Retourne le code de sortie. */
+async function run(root) {
+  const { dbPath, photosDir } = locateLegacyFiles(root);
   console.log(`Base iOS     : ${dbPath}`);
   console.log(`Photos       : ${photosDir ?? "(aucun dossier wine-photos trouvé)"}`);
 
@@ -61,12 +95,12 @@ async function main() {
 
   if (plan.errors.length > 0) {
     console.error("\nImport impossible tant que les erreurs ci-dessus ne sont pas résolues.");
-    process.exit(2);
+    return 2;
   }
 
   if (!apply) {
     console.log("\nSimulation terminée — rien n'a été écrit. Relancez avec --apply pour importer.");
-    return;
+    return 0;
   }
 
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL n'est pas défini (.env.local)");
@@ -111,13 +145,17 @@ async function main() {
       `\nVérification : base = ${inDb.caves} / ${inDb.cellarEntries} / ${inDb.wines}, ` +
         `source = ${plan.counts.caves} / ${plan.counts.cellarEntries} / ${plan.counts.wines} → ${ok ? "OK" : "ÉCART"}`,
     );
-    if (!ok) process.exit(3);
+    return ok ? 0 : 3;
   } finally {
     await client.end();
   }
 }
 
-main().catch((error) => {
-  console.error(`\nÉchec : ${error.message}`);
-  process.exit(1);
-});
+main()
+  .then((code) => {
+    process.exitCode = code;
+  })
+  .catch((error) => {
+    console.error(`\nÉchec : ${error.message}`);
+    process.exitCode = 1;
+  });

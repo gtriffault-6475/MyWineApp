@@ -49,10 +49,31 @@ afficher aucun secret.
 Le conteneur contient `AppData/Library/LocalDatabase/myvine.db` (SQLite) et
 `AppData/Documents/wine-photos/` (photos d'étiquettes).
 
+#### Sans Xcode : sauvegarde Finder
+
+1. Brancher l'iPhone, l'ouvrir dans le **Finder** → onglet *Général*.
+2. Choisir « Sauvegarder toutes les données de l'iPhone sur ce Mac » et
+   **décocher « Chiffrer la sauvegarde locale »** (une sauvegarde chiffrée est
+   illisible par le script).
+3. *Sauvegarder maintenant* et attendre la fin.
+4. Donner au Terminal l'**accès complet au disque** (Réglages Système →
+   Confidentialité et sécurité → Accès complet au disque), sinon macOS bloque la
+   lecture du dossier de sauvegarde.
+
+Le script accepte directement le dossier des sauvegardes : il choisit la plus
+récente qui contient MyVine, en extrait la base et les photos dans un dossier
+temporaire (supprimé à la fin) et ne modifie jamais la sauvegarde.
+
 ### 2. Simuler l'import (n'écrit rien)
 
 ```bash
 npm run import:legacy -- ~/Desktop/MyVine.xcappdata
+```
+
+ou, depuis une sauvegarde Finder :
+
+```bash
+npm run import:legacy -- ~/Library/Application\ Support/MobileSync/Backup
 ```
 
 Le rapport affiche les compteurs, les avertissements (photo manquante, lien vers
