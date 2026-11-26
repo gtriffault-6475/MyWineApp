@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { sql } from "@/lib/db/client";
 import type { Wine } from "@/lib/wines/wine";
 import type { WineInput } from "@/lib/wines/input";
+import { orphanOrNull } from "@/lib/db/photos";
 
 // Les dates sont renvoyées en texte : jours calendaires « AAAA-MM-JJ » et
 // horodatages ISO, sans conversion de fuseau par le driver.
@@ -19,6 +20,15 @@ export async function listWines(): Promise<Wine[]> {
   await connection();
   return (await sql.query(
     `SELECT ${WINE_COLUMNS} FROM wine ORDER BY drunk_at DESC, created_at DESC`,
+  )) as unknown as Wine[];
+}
+
+/** Dégustations liées à une bouteille de la cave, plus récentes d'abord. */
+export async function listWinesForEntry(entryId: string): Promise<Wine[]> {
+  await connection();
+  return (await sql.query(
+    `SELECT ${WINE_COLUMNS} FROM wine WHERE cellar_entry_id = $1 ORDER BY drunk_at DESC, created_at DESC`,
+    [entryId],
   )) as unknown as Wine[];
 }
 
@@ -44,10 +54,7 @@ export async function deleteWine(
   ])) as unknown as { photo_path: string | null }[];
   if (deleted.length === 0) return null;
 
-  const photoPath = deleted[0].photo_path;
-  if (!photoPath) return { orphanPhotoPath: null };
-
-  return { orphanPhotoPath: (await isPhotoUsed(photoPath)) ? null : photoPath };
+  return { orphanPhotoPath: await orphanOrNull(deleted[0].photo_path) };
 }
 
 const WRITABLE_COLUMNS = [
@@ -90,16 +97,6 @@ export async function updateWine(
   if (rows.length === 0) return null;
 
   const previous = rows[0].previous_photo_path;
-  if (!previous || previous === input.photo_path) return { orphanPhotoPath: null };
-  return { orphanPhotoPath: (await isPhotoUsed(previous)) ? null : previous };
-}
-
-/** Une photo peut être partagée entre une dégustation et une bouteille de la cave. */
-async function isPhotoUsed(photoPath: string): Promise<boolean> {
-  const [{ used }] = (await sql.query(
-    `SELECT EXISTS (SELECT 1 FROM wine WHERE photo_path = $1)
-         OR EXISTS (SELECT 1 FROM cellar_entry WHERE photo_path = $1) AS used`,
-    [photoPath],
-  )) as unknown as { used: boolean }[];
-  return used;
+  if (previous === input.photo_path) return { orphanPhotoPath: null };
+  return { orphanPhotoPath: await orphanOrNull(previous) };
 }
