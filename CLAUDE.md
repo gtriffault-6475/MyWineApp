@@ -61,6 +61,15 @@ dans l'URL, menu « ⋯ » au lieu de l'appui long sur une cave, clés API en
 variables d'environnement (Paramètres affiche seulement leur présence),
 bouton « Se déconnecter ».
 
+## Sauvegarde (Paramètres → « Exporter mes données »)
+
+`/api/export` renvoie les données en JSON (format `myvine-export`, version 1) ;
+le **téléphone** télécharge ensuite les photos via `/api/photos` et assemble le
+ZIP (`lib/export/archive.ts`, fflate) — une réponse de fonction Vercel est
+limitée à ~4,5 Mo. Sur iPhone, le fichier est remis par la feuille de partage
+(« Enregistrer dans Fichiers »). Si le schéma change, incrémenter
+`EXPORT_VERSION` et documenter la différence.
+
 ## API externes
 
 - Foursquare Places : `https://places-api.foursquare.com/places/search`, en-têtes

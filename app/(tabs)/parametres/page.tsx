@@ -5,6 +5,7 @@ import { LABEL_MODEL } from "@/lib/clients/label-recognition";
 import { PageHeader } from "@/app/components/page-header";
 import { AppearancePicker } from "@/app/components/settings/appearance-picker";
 import { LogoutButton } from "@/app/components/settings/logout-button";
+import { ExportButton } from "@/app/components/settings/export-button";
 
 export const metadata: Metadata = { title: "Paramètres · MyVine" };
 
@@ -24,6 +25,14 @@ export default async function SettingsPage() {
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 pb-12">
         <Section title="Apparence">
           <AppearancePicker initial={appearance} />
+        </Section>
+
+        <Section title="Sauvegarde">
+          <p className="text-sm leading-5 text-text-muted">
+            Téléchargez toutes vos données (caves, bouteilles, dégustations et photos) dans une
+            archive ZIP, à garder dans Fichiers ou sur iCloud Drive.
+          </p>
+          <ExportButton />
         </Section>
 
         <Section title="Reconnaissance d'étiquette IA">

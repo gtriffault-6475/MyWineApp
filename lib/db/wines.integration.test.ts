@@ -126,3 +126,44 @@ describe.skipIf(!url)("getStats", async () => {
     expect(buyAgainPercent(stats)).toBe(50);
   });
 });
+
+describe.skipIf(!url)("exportAll", async () => {
+  const { sql } = await import("./client");
+  const { exportAll } = await import("./export");
+
+  afterAll(async () => {
+    await sql.query("DELETE FROM wine");
+    await sql.query("DELETE FROM cellar_entry");
+    await sql.query("DELETE FROM cave");
+  });
+
+  it("exports every table with typed values and ISO dates", async () => {
+    await sql.query("DELETE FROM wine");
+    await sql.query("DELETE FROM cellar_entry");
+    await sql.query("DELETE FROM cave");
+    const [{ id: caveId }] = (await sql.query(
+      "INSERT INTO cave (name, legacy_id) VALUES ('Ma cave', 1) RETURNING id",
+    )) as { id: string }[];
+    const [{ id: entryId }] = (await sql.query(
+      `INSERT INTO cellar_entry (cave_id, name, purchase_price, purchase_date, photo_path)
+       VALUES ($1, 'Margaux', 24.9, '2020-03-14', 'wine-photos/a.jpg') RETURNING id`,
+      [caveId],
+    )) as { id: string }[];
+    await sql.query(
+      `INSERT INTO wine (name, drunk_at, score, cellar_entry_id) VALUES ('Margaux', '2025-01-01', 9.5, $1)`,
+      [entryId],
+    );
+
+    const data = await exportAll();
+    expect(data.caves).toEqual([
+      expect.objectContaining({ id: caveId, legacy_id: 1, name: "Ma cave", created_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*Z$/) }),
+    ]);
+    expect(data.cellar_entries[0]).toMatchObject({
+      cave_id: caveId,
+      purchase_price: 24.9,
+      purchase_date: "2020-03-14",
+      archived: false,
+    });
+    expect(data.wines[0]).toMatchObject({ drunk_at: "2025-01-01", score: 9.5, cellar_entry_id: entryId });
+  });
+});
